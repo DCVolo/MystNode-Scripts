@@ -1,6 +1,16 @@
 #!/bin/bash
 
+set -x
 set -e
+
+# The current version of the script
+CURRENT_VERSION="0.9"
+
+# The URL of the script on GitHub
+SCRIPT_URL="https://raw.githubusercontent.com/DCVolo/MystNode-Scripts/main/KeepServicesAliveOrDown.sh"
+
+# Available Update
+updaterStatus="No"
 
 # DEFAULT PARAMETERS
 # Timer (seconds)
@@ -8,7 +18,9 @@ p_timer=60
 # Discord webhook URL
 p_discord=""
 # Define the name of your MystNode container
+# if this is empty; docker_cmd will be empty, so it can run on most Linux
 p_container=""
+docker_cmd="docker exec ${p_container}"
 # Default mode is file modification event (fast, need apt-get install inotify-tools), mode 1 is basic check every XX seconds.
 p_check_mode=1
 # Full path to config-mainnet.toml wich contain the active-services list
@@ -26,34 +38,36 @@ p_node_ID="" # I strongly advise to let the script find your node's ID rather th
 get_node_id() {
     if [ -z "$p_node_ID" ]; then
         # Takes the account identity
-        p_node_ID=$(docker exec $p_container myst account info | grep "Using identity:" | awk -F':' '{print $2}' | tr -d ' ')
+        p_node_ID=$("$docker_cmd" myst account info | grep "Using identity:" | awk -F':' '{print $2}' | tr -d ' ')
         # from the list of identities (???) (array or not array, that is the question)
-        #p_node_ID=$(docker exec myst myst cli identities list | grep "[+]" | awk -F' ' '{print $2}' | tr -d ' ') 
+        #p_node_ID=$($docker_cmd myst cli identities list | grep "[+]" | awk -F' ' '{print $2}' | tr -d ' ') 
     fi
 }
+
 
 # Function to start a service | $1 = node ID, $2 = service name
 start_service() {
-	docker exec $p_container myst cli service start $1 $2
-    send_notif_discord $2 "started"
+	"$docker_cmd" myst cli service start "$1" "$2"
+    send_notif_discord "$2" "started"
 }
+
 
 # Function to stop a service | $1 = service ID, $2 = service name
 stop_service() {
-    docker exec $p_container myst cli service stop $1
-    send_notif_discord $2 "stopped"
+    "$docker_cmd" myst cli service stop "$1"
+    send_notif_discord "$2" "stopped"
 }
+
 
 # Function to send a Discord notification | $1 = service_name, $2 = service_action (started/stopped)
 send_notif_discord() {
-    if [ ! -z "$p_discord" ]; then
+    if [ -n "$p_discord" ]; then
         curl -i -H "Accept: application/json" -H "Content-Type:application/json" -X POST \
-            --data "{\"content\": \"Service : $1, Status : $2.\"}" $p_discord
+            --data "{\"content\": \"Service : $1, Status : $2.\"}" "$p_discord"
     fi
 }
 
-
-check_services() {
+	check_services() {
     # Get the current active services and store the result in an array
     services_currently_active_ID=()
     services_currently_active_TYPE=()
@@ -63,7 +77,7 @@ check_services() {
         type=$(echo "$line" | awk '{print $NF}')
         services_currently_active_ID+=("$id")
         services_currently_active_TYPE+=("$type")
-    done < <(docker exec $p_container myst cli service list | grep Running)
+    done < <("$docker_cmd" myst cli service list | grep Running)
 
     # Loop through each service defined in the 'service_status' array.
     for i in "${!service_names[@]}"; do
@@ -73,7 +87,7 @@ check_services() {
         if [[ ${service_status[$i]} -eq 1 ]]; then
             # If the service is not currently running, start it.
             if ! echo "${services_currently_active_TYPE[@]}" | grep -q "$service"; then
-                start_service $p_node_ID $service
+                start_service "$p_node_ID" "$service"
             fi
         else
             # If the service is not supposed to be running (value is 0) but it is, stop it.
@@ -86,36 +100,74 @@ check_services() {
                         break
                     fi
                 done
-                stop_service "$service_id" "${service_names[$i]}"
+                stop_service "$service_id" "$service"
             fi
         fi
     done
 }
 
+
+# Will kill any instance of this script that were launched
+kill_this_script(){
+	pkill -f KeepServicesAliveOrDown.sh
+}
+trap 'kill_this_script' SIGTERM
+
+
+# Will check if a newer version on github exists
+check_for_update(){
+	if [ ! command -v wget &> /dev/null ]; then
+		updaterStatus="wget not installed, can't update."
+	else
+		# Download the script from GitHub
+		wget -q -O KeepServicesAliveOrDown-temp.sh "$SCRIPT_URL"
+
+		# Extract the version number from the downloaded script
+		NEW_VERSION=$(grep -oP 'CURRENT_VERSION="\K[^"]+' KeepServicesAliveOrDown-temp.sh)
+
+		# Compare the version numbers
+		if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
+			updaterStatus="Yes (attempt self-updating)."
+			mv KeepServicesAliveOrDown-temp.sh $(basename $0)
+		else
+			rm KeepServicesAliveOrDown-temp.sh
+		fi	
+	fi
+}
+
+
 main(){
     get_node_id
+	
+	# If a container's name is not used then proceed to use a standard Linux command
+	if [ -z "$p_container" ]; then
+		docker_cmd=""
+	fi
 
-    if [ $p_check_mode -eq 1 ]; then
+    if [ "$p_check_mode" -eq 1 ]; then
         # Start an infinite loop. This script will keep running until it's manually stopped.
         while true; do
             check_services
             # Wait for XX seconds before the next iteration of the loop.
-            sleep $p_timer
+            sleep "$p_timer"
         done
     else
         # Use the filesystem event notifier
         check_services # otherwise it would need a file modification before being set as desired
-        while inotifywait -e modify $p_pathToconfigMainnet; do
+        while inotifywait -e modify "$p_pathToconfigMainnet"; do
             check_services
         done
     fi
 } > /dev/null 2>&1
 
+
 function print_help {
+	echo "Update available ? $updaterStatus"
+	echo "			"
     echo "Usage: $0 [options]"
     echo
     echo "Options:"
-    echo "  -c, --container    MystNode container's name"
+    echo "  -c, --container    (Do not fill for standard Linux use) MystNode container's name"
     echo "  -d, --discord      Discord webhook URL (HTTPS format)"
     echo "  -h, --help         Display this help message"
     echo "  -m, --mode         (0/1) 0 uses inotifywait wich need to be installed 'apt-get install inotifywait', 1 (default) is a basic check every <duration> in seconds set with -t"
@@ -123,6 +175,7 @@ function print_help {
     echo "  -p, --path-config  The full path to config mainnet (config-mainnet.toml)"
     echo "  -s, --services     Services to maintain either enabled or disabled [scraping data_transfer dvpn wireguard]."
     echo "  -t, --timer        Checking frequency (seconds)"
+	echo "  -q, --quit         Will kill any instance of this script that were launched"
     echo "  "
     echo "                     Ex: -c \"myst\" -m 1 -s \"1 1 1 1\" -t 60"
     echo "                     Ex: -c \"myst\" -m 0 -p \"/var/lib/docker/volumes/myst-data/_data/config-mainnet.toml\" -s \"1 1 0 0\" "
@@ -154,6 +207,7 @@ while [[ "$#" -gt 0 ]]; do
         -p|--path-config) p_pathToconfigMainnet="$2"; shift ;;
         -s|--services) IFS=' ' read -r -a service_status <<< "$2"; shift ;;
         -t|--timer) p_timer="$2"; shift ;;
+		-q|--quit) kill_this_script; exit 0 ;;
         *) echo "Unknown parameter passed: $1"; print_help; exit 1 ;;
     esac
     shift
