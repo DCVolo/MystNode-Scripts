@@ -4,7 +4,7 @@
 set -e
 
 # The current version of the script
-CURRENT_VERSION="0.9.3"
+CURRENT_VERSION="0.9.4"
 
 # The URL of the script on GitHub
 SCRIPT_URL="https://raw.githubusercontent.com/DCVolo/MystNode-Scripts/main/KeepServicesAliveOrDown.sh"
@@ -171,6 +171,7 @@ function print_help {
 	echo "         "
     echo "UPDATE AVAILABLE: $updaterStatus"
 	echo "SOURCE: $SCRIPT_URL"
+	echo "VERSION: $CURRENT_VERSION"
     echo "         "
     echo "Usage: $0 [options]"
     echo
