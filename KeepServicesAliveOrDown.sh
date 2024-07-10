@@ -4,7 +4,7 @@
 set -e
 
 # The current version of the script
-CURRENT_VERSION="0.9.1"
+CURRENT_VERSION="0.9.2"
 
 # The URL of the script on GitHub
 SCRIPT_URL="https://raw.githubusercontent.com/DCVolo/MystNode-Scripts/main/KeepServicesAliveOrDown.sh"
@@ -128,9 +128,10 @@ check_for_update(){
         NEW_VERSION=$(grep -oP 'CURRENT_VERSION="\K[^"]+' KeepServicesAliveOrDown-temp.sh)
 
         # Compare the version numbers
-        if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
+        if [ $CURRENT_VERSION != $NEW_VERSION ]; then			
             updaterStatus="Yes,attemp self-update."
             mv KeepServicesAliveOrDown-temp.sh "$(basename "$0")"
+			chmod +x "$0"
         else
             rm KeepServicesAliveOrDown-temp.sh
         fi
