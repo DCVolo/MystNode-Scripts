@@ -4,7 +4,7 @@
 set -e
 
 # The current version of the script
-CURRENT_VERSION="0.9.6"
+CURRENT_VERSION="0.9.7"
 
 # The URL of the script on GitHub
 SCRIPT_URL="https://raw.githubusercontent.com/DCVolo/MystNode-Scripts/main/KeepServicesAliveOrDown.sh"
@@ -177,14 +177,14 @@ function print_help {
     echo "Usage: $0 [options]"
     echo
     echo "Options:"
-    echo "  -c, --container    (Do not fill for standard Linux use) MystNode container's name"
-    echo "  -d, --discord      Discord webhook URL (HTTPS format)"
+    echo "  -c, --container    MystNode container's name (Do not fill for standard Linux use)"
+    echo "  -d, --discord      Discord webhook URL (HTTPS format, optional)"
     echo "  -h, --help         Display this help message but will also check for an update and install it if found"
     echo "  -m, --mode         (0/1) 0 uses inotifywait wich need to be installed 'sudo apt install inotify-tools', 1 (default) is a basic check every <duration> in seconds set with -t"
-    echo "  -n, --nodeID       The MystNode's identity"
+    echo "  -n, --nodeID       The MystNode's identity (Optional, the script will find it)"
     echo "  -p, --path-config  The full path to config mainnet (config-mainnet.toml)"
     echo "  -s, --services     Services to maintain either enabled or disabled [scraping data_transfer dvpn wireguard]."
-    echo "  -t, --timer        Checking frequency (seconds)"
+    echo "  -t, --timer        Checking frequency (in seconds, works only with mode 1)"
     echo "  -q, --quit         Will kill any instance of this script that were launched"
     echo "  "
 	echo "                     Ex: *no need for parameters if you edit the variables in the code and then run the script* "
