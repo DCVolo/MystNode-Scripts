@@ -4,7 +4,7 @@
 set -e
 
 # The current version of the script
-CURRENT_VERSION="0.9.5"
+CURRENT_VERSION="0.9.6"
 
 # The URL of the script on GitHub
 SCRIPT_URL="https://raw.githubusercontent.com/DCVolo/MystNode-Scripts/main/KeepServicesAliveOrDown.sh"
@@ -179,7 +179,7 @@ function print_help {
     echo "Options:"
     echo "  -c, --container    (Do not fill for standard Linux use) MystNode container's name"
     echo "  -d, --discord      Discord webhook URL (HTTPS format)"
-    echo "  -h, --help         Display this help message"
+    echo "  -h, --help         Display this help message but will also check for an update and install it if found"
     echo "  -m, --mode         (0/1) 0 uses inotifywait wich need to be installed 'sudo apt install inotify-tools', 1 (default) is a basic check every <duration> in seconds set with -t"
     echo "  -n, --nodeID       The MystNode's identity"
     echo "  -p, --path-config  The full path to config mainnet (config-mainnet.toml)"
@@ -187,16 +187,17 @@ function print_help {
     echo "  -t, --timer        Checking frequency (seconds)"
     echo "  -q, --quit         Will kill any instance of this script that were launched"
     echo "  "
-    echo "                     Ex: -c \"myst\" -m 1 -s \"1 1 1 1\" -t 60"
+	echo "                     Ex: *no need for parameters if you edit the variables in the code and then run the script* "
+    echo "                     Ex: -m 1 -s \"1 1 1 1\" -t 60"
     echo "                     Ex: -c \"myst\" -m 0 -p \"/var/lib/docker/volumes/myst-data/_data/config-mainnet.toml\" -s \"1 1 0 0\" "
     echo "                     Ex: -c \"myst\" -d \"https://url_of_your_Discord_Webhook\" -m 1 -n \"your node's ID\" -s \"1 1 1 0\" -t 60"
     echo "  "
-    echo "                     Note:    You can (and I advise you to) edit the script (DEFAULT PARAMETERS) with 'nano ./script.sh' or use the full command given above."
+    echo "                     Note:    You can (and I advise you to) edit the script (DEFAULT PARAMETERS) with 'nano ./KeepServicesAliveOrDown.sh' or use the full command given above."
     echo "                              Not using all parameters OR not using quotes OR filling incorrect data; Could result in bug/crash. "
     echo "                              By using this script you acknowledge that what happens next is your entire responsibility,"
     echo "                                      always check twice. It is commented but you can also take use of AI to explain the code."
     echo "                              The code was written for Linux Ubuntu but I guess it should work for most Linux distrib (?)"
-    echo "                              If you do improve or fix some bad behavior please let me know on GITHUB : "
+    echo "                              If you do improve or fix some bad behavior please let me know on GITHUB. "
     echo "  "
     echo "                     Appreciate this ? I wouldn't mind an extra-mini-small donation : "
     echo "                              @PAYPAL         -> paypal.me/DCVolo"
