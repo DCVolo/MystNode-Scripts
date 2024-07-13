@@ -4,13 +4,13 @@
 set -e
 
 # The current version of the script
-CURRENT_VERSION="0.9.4"
+CURRENT_VERSION="0.9.5"
 
 # The URL of the script on GitHub
 SCRIPT_URL="https://raw.githubusercontent.com/DCVolo/MystNode-Scripts/main/KeepServicesAliveOrDown.sh"
 
 # Available Update
-updaterStatus="No"
+updaterStatus="No" 
 
 # DEFAULT PARAMETERS
 # Timer (seconds)
@@ -126,9 +126,10 @@ check_for_update(){
 
         # Extract the version number from the downloaded script
         NEW_VERSION=$(sed -n 's/^CURRENT_VERSION="\([^"]*\)".*/\1/p' KeepServicesAliveOrDown-temp.sh)
-		
+
         # Compare the version numbers
         if [ "$CURRENT_VERSION" != "$NEW_VERSION" ]; then
+			# Keep the new file, renames it, and gives it right for execution
             updaterStatus="Yes,attemp self-update."
             mv KeepServicesAliveOrDown-temp.sh "$(basename "$0")"
 			chmod +x "$0"
@@ -179,7 +180,7 @@ function print_help {
     echo "  -c, --container    (Do not fill for standard Linux use) MystNode container's name"
     echo "  -d, --discord      Discord webhook URL (HTTPS format)"
     echo "  -h, --help         Display this help message"
-    echo "  -m, --mode         (0/1) 0 uses inotifywait wich need to be installed 'apt-get install inotifywait', 1 (default) is a basic check every <duration> in seconds set with -t"
+    echo "  -m, --mode         (0/1) 0 uses inotifywait wich need to be installed 'sudo apt install inotify-tools', 1 (default) is a basic check every <duration> in seconds set with -t"
     echo "  -n, --nodeID       The MystNode's identity"
     echo "  -p, --path-config  The full path to config mainnet (config-mainnet.toml)"
     echo "  -s, --services     Services to maintain either enabled or disabled [scraping data_transfer dvpn wireguard]."
