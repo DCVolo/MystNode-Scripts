@@ -158,6 +158,8 @@ data_transfer_earnings=$EARN_DATA"
     # -----------------------------
     # SEND TO INFLUXDB
     # -----------------------------
+    echo "[DEBUG] Sending line: $LINE"
+
     curl -s -XPOST "$INFLUX_URL" -u "$AUTH_USERNAME:$AUTH_PASSWORD" --data-binary "$LINE"
 
     i=$((i+1))
