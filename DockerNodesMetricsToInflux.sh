@@ -6,8 +6,8 @@ apk add --no-cache curl jq >/dev/null 2>&1
 # -----------------------------
 # CONFIGURATION
 # -----------------------------
-API_IP="${HTTP_API_IP}"
-API_PORT="${HTTP_API_PORT}"
+API_IP="${TEQUILA_API_IP}"
+API_PORT="${TEQUILA_API_PORT}"
 INFLUX_URL="${INFLUX_URL}"
 LOOP_DELAY="${SCRIPT_INTERVAL}"
 
@@ -20,7 +20,7 @@ if [ -z "$DOCKER_CTNS_NAME" ] || [ -z "$NODES_NAME" ]; then
 fi
 
 if [ -z "$API_IP" ] || [ -z "$API_PORT" ] || [ -z "$INFLUX_URL" ]; then
-  echo "Error: HTTP_API_IP, HTTP_API_PORT, or INFLUX_URL not set"
+  echo "Error: TEQUILA_API_IP, TEQUILA_API_PORT, or INFLUX_URL not set"
   exit 1
 fi
 
