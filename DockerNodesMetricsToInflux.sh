@@ -12,6 +12,12 @@ INFLUX_URL="${INFLUX_URL}"
 LOOP_DELAY="${SCRIPT_INTERVAL}"
 
 # -----------------------------
+# AUTH
+# ------------------------------
+AUTH_USERNAME="${INFLUX_USERNAME}"
+AUTH_PASSWORD="${INFLUX_PASSWORD}"
+
+# -----------------------------
 # VALIDATE REQUIRED ENV VARS
 # -----------------------------
 if [ -z "$DOCKER_CTNS_NAME" ] || [ -z "$NODES_NAME" ]; then
@@ -24,6 +30,10 @@ if [ -z "$API_IP" ] || [ -z "$API_PORT" ] || [ -z "$INFLUX_URL" ]; then
   exit 1
 fi
 
+if [ -z "$AUTH_USERNAME" ] || [ -z "$AUTH_PASSWORD" ]; then
+  echo "Error: INFLUX_USERNAME or INFLUX_PASSWORD not set"
+  exit 1
+fi
 # -----------------------------
 # SPLIT SPACE-SEPARATED LISTS
 # -----------------------------
@@ -148,7 +158,7 @@ data_transfer_earnings=$EARN_DATA"
     # -----------------------------
     # SEND TO INFLUXDB
     # -----------------------------
-    curl -s -XPOST "$INFLUX_URL" --data-binary "$LINE"
+    curl -s -XPOST "$INFLUX_URL" -u "$AUTH_USERNAME:$AUTH_PASSWORD" --data-binary "$LINE"
 
     i=$((i+1))
   done
