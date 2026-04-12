@@ -188,9 +188,7 @@ data_transfer_earnings=$EARN_DATA"
     # -----------------------------
     echo "[DEBUG] Sending line: $LINE"
 
-    curl -s -XPOST "$INFLUX_URL" \
-      -u "$AUTH_USERNAME:$AUTH_PASSWORD" \
-      --data-binary "$LINE"
+    curl -sS -XPOST "$INFLUX_URL" -u "$AUTH_USERNAME:$AUTH_PASSWORD" --data-binary "$LINE"
 
     i=$((i+1))
   done
