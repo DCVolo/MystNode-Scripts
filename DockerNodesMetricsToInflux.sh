@@ -181,7 +181,7 @@ data_transfer_active_sessions=$SESS_DATA, \
 data_transfer_price_per_gib=$PRICE_DATA, \
 data_transfer_earnings=$EARN_DATA"
 
-    LINE=$(echo "$LINE" | tr -d ' ')
+    LINE=$(echo "$LINE" | sed 's/, */,/g')
 
     # -----------------------------
     # SEND TO INFLUXDB
