@@ -34,6 +34,7 @@ if [ -z "$AUTH_USERNAME" ] || [ -z "$AUTH_PASSWORD" ]; then
   echo "Error: INFLUX_USERNAME or INFLUX_PASSWORD not set"
   exit 1
 fi
+
 # -----------------------------
 # SPLIT SPACE-SEPARATED LISTS
 # -----------------------------
@@ -44,6 +45,28 @@ if [ "$CTN_COUNT" -ne "$NODE_COUNT" ]; then
   echo "Error: DOCKER_CTNS_NAME and NODES_NAME length mismatch"
   exit 1
 fi
+
+# -----------------------------
+# INFLUXDB.v1 VALUE FORMATTER
+# -----------------------------
+format_influx_value() {
+  VAL="$1"
+
+  # Integer (no decimal)
+  if echo "$VAL" | grep -Eq '^[0-9]+$'; then
+    echo "${VAL}i"
+    return
+  fi
+
+  # Float
+  if echo "$VAL" | grep -Eq '^[0-9]+\.[0-9]+$'; then
+    echo "$VAL"
+    return
+  fi
+
+  # Fallback
+  echo "0i"
+}
 
 # -----------------------------
 # LOOP FOREVER
@@ -66,10 +89,11 @@ while true; do
     fi
 
     # -----------------------------
-    # FETCH DATA
+    # FETCH DATA (SSE FIRST LINE)
     # -----------------------------
     RAW_STATE=$(docker exec "$DOCKER_NODE" sh -c "wget -qO- \"http://$API_IP:$API_PORT/events/state\" | head -n 1" 2>/dev/null)
-    if [ $? -ne 0 ]; then
+
+    if [ $? -ne 0 ] || [ -z "$RAW_STATE" ]; then
       echo "Error: Failed to fetch state for $DOCKER_NODE"
       i=$((i+1))
       continue
@@ -77,8 +101,12 @@ while true; do
 
     STATE_JSON=$(echo "$RAW_STATE" | sed 's/^data: //')
 
-    EARNINGS_JSON=$(docker exec "$DOCKER_NODE" wget -qO- "http://$API_IP:$API_PORT/node/provider/service-earnings" 2>/dev/null)
-    if [ $? -ne 0 ]; then
+    # -----------------------------
+    # FETCH EARNINGS
+    # -----------------------------
+    EARNINGS_JSON=$(docker exec "$DOCKER_NODE" sh -c "wget -qO- \"http://$API_IP:$API_PORT/node/provider/service-earnings\" | head -n 1" 2>/dev/null)
+
+    if [ $? -ne 0 ] || [ -z "$EARNINGS_JSON" ]; then
       echo "Error: Failed to fetch earnings for $DOCKER_NODE"
       i=$((i+1))
       continue
@@ -102,9 +130,9 @@ while true; do
     # -----------------------------
     # EXTRACT GLOBAL METRICS
     # -----------------------------
-    ACTIVE_SESSIONS=$(echo "$STATE_JSON" | jq -r '.payload.sessions // [] | length')
-    UNSETTLED_EARNINGS=$(echo "$STATE_JSON" | jq -r '.payload.identities[0].earnings_tokens.human // "0"')
-    TOTAL_EARNINGS=$(echo "$STATE_JSON" | jq -r '.payload.identities[0].earnings_total_tokens.human // "0"')
+    ACTIVE_SESSIONS=$(format_influx_value "$(echo "$STATE_JSON" | jq -r '.payload.sessions | length')")
+    UNSETTLED_EARNINGS=$(format_influx_value "$(echo "$STATE_JSON" | jq -r '.payload.identities[0].earnings_tokens.human')")
+    TOTAL_EARNINGS=$(format_influx_value "$(echo "$STATE_JSON" | jq -r '.payload.identities[0].earnings_total_tokens.human')")
 
     # -----------------------------
     # SERVICE HELPERS
@@ -124,17 +152,17 @@ while true; do
     # -----------------------------
     # EXTRACT PER-SERVICE METRICS
     # -----------------------------
-    PRICE_DVPN=$(get_price "dvpn")
-    PRICE_SCRAPING=$(get_price "scraping")
-    PRICE_DATA=$(get_price "data_transfer")
+    PRICE_DVPN=$(format_influx_value "$(get_price "dvpn")")
+    PRICE_SCRAPING=$(format_influx_value "$(get_price "scraping")")
+    PRICE_DATA=$(format_influx_value "$(get_price "data_transfer")")
 
-    SESS_DVPN=$(get_service_sessions "dvpn")
-    SESS_SCRAPING=$(get_service_sessions "scraping")
-    SESS_DATA=$(get_service_sessions "data_transfer")
+    SESS_DVPN=$(format_influx_value "$(get_service_sessions "dvpn")")
+    SESS_SCRAPING=$(format_influx_value "$(get_service_sessions "scraping")")
+    SESS_DATA=$(format_influx_value "$(get_service_sessions "data_transfer")")
 
-    EARN_DVPN=$(get_service_earnings "dvpn")
-    EARN_SCRAPING=$(get_service_earnings "scraping")
-    EARN_DATA=$(get_service_earnings "data_transfer")
+    EARN_DVPN=$(format_influx_value "$(get_service_earnings "dvpn")")
+    EARN_SCRAPING=$(format_influx_value "$(get_service_earnings "scraping")")
+    EARN_DATA=$(format_influx_value "$(get_service_earnings "data_transfer")")
 
     # -----------------------------
     # BUILD INFLUXDB LINE PROTOCOL
@@ -160,7 +188,9 @@ data_transfer_earnings=$EARN_DATA"
     # -----------------------------
     echo "[DEBUG] Sending line: $LINE"
 
-    curl -s -XPOST "$INFLUX_URL" -u "$AUTH_USERNAME:$AUTH_PASSWORD" --data-binary "$LINE"
+    curl -s -XPOST "$INFLUX_URL" \
+      -u "$AUTH_USERNAME:$AUTH_PASSWORD" \
+      --data-binary "$LINE"
 
     i=$((i+1))
   done
