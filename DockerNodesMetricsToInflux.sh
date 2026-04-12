@@ -168,18 +168,19 @@ while true; do
     # BUILD INFLUXDB LINE PROTOCOL
     # -----------------------------
     LINE="mystnode,node_name=$NODE_NAME \
-active_sessions=$ACTIVE_SESSIONS, \
-earnings_unsettled=$UNSETTLED_EARNINGS, \
-earnings_total=$TOTAL_EARNINGS, \
-dvpn_active_sessions=$SESS_DVPN, \
-dvpn_price_per_gib=$PRICE_DVPN, \
-dvpn_earnings=$EARN_DVPN, \
-scraping_active_sessions=$SESS_SCRAPING, \
-scraping_price_per_gib=$PRICE_SCRAPING, \
-scraping_earnings=$EARN_SCRAPING, \
-data_transfer_active_sessions=$SESS_DATA, \
-data_transfer_price_per_gib=$PRICE_DATA, \
-data_transfer_earnings=$EARN_DATA"
+ active_sessions=$ACTIVE_SESSIONS, \
+ earnings_unsettled=$UNSETTLED_EARNINGS, \
+ earnings_total=$TOTAL_EARNINGS, \
+ dvpn_active_sessions=$SESS_DVPN, \
+ dvpn_price_per_gib=$PRICE_DVPN, \
+ dvpn_earnings=$EARN_DVPN, \
+ scraping_active_sessions=$SESS_SCRAPING, \
+ scraping_price_per_gib=$PRICE_SCRAPING, \
+ scraping_earnings=$EARN_SCRAPING, \
+ data_transfer_active_sessions=$SESS_DATA, \
+ data_transfer_price_per_gib=$PRICE_DATA, \
+ data_transfer_earnings=$EARN_DATA"
+
 
     LINE=$(echo "$LINE" | sed 's/, */,/g')
 
