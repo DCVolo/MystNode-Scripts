@@ -68,14 +68,14 @@ while true; do
     # -----------------------------
     # FETCH DATA
     # -----------------------------
-    RAW_STATE=$(docker exec "$DOCKER_NODE" wget -qO- "http://$API_IP:$API_PORT/events/state" 2>/dev/null)
+    RAW_STATE=$(docker exec "$DOCKER_NODE" sh -c "wget -qO- \"http://$API_IP:$API_PORT/events/state\" | head -n 1" 2>/dev/null)
     if [ $? -ne 0 ]; then
       echo "Error: Failed to fetch state for $DOCKER_NODE"
       i=$((i+1))
       continue
     fi
 
-    STATE_JSON=$(echo "$RAW_STATE" | head -n 1 | sed 's/^data: //')
+    STATE_JSON=$(echo "$RAW_STATE" | sed 's/^data: //')
 
     EARNINGS_JSON=$(docker exec "$DOCKER_NODE" wget -qO- "http://$API_IP:$API_PORT/node/provider/service-earnings" 2>/dev/null)
     if [ $? -ne 0 ]; then
