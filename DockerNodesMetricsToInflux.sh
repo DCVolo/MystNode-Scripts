@@ -1,5 +1,15 @@
 #!/bin/sh
 
+# -----------------------------
+# CONTAINER ENGINE SELECTION
+# -----------------------------
+CONTAINER_ENGINE="${CONTAINER_ENGINE:-docker}"
+
+if [ "$CONTAINER_ENGINE" != "docker" ] && [ "$CONTAINER_ENGINE" != "podman" ]; then
+  echo "Error: CONTAINER_ENGINE must be 'docker' or 'podman' (got '$CONTAINER_ENGINE')"
+  exit 1
+fi
+
 # Install dependencies silently
 apk add --no-cache curl jq >/dev/null 2>&1
 
@@ -82,7 +92,7 @@ while true; do
     # -----------------------------
     # CHECK CONTAINER EXISTS
     # -----------------------------
-    if ! docker inspect "$DOCKER_NODE" >/dev/null 2>&1; then
+    if ! "$CONTAINER_ENGINE" inspect "$DOCKER_NODE" >/dev/null 2>&1; then
       echo "Error: Container $DOCKER_NODE does not exist"
       i=$((i+1))
       continue
@@ -91,7 +101,7 @@ while true; do
     # -----------------------------
     # FETCH DATA (SSE FIRST LINE)
     # -----------------------------
-    RAW_STATE=$(docker exec "$DOCKER_NODE" sh -c "wget -qO- \"http://$API_IP:$API_PORT/events/state\" | head -n 1" 2>/dev/null)
+    RAW_STATE=$("$CONTAINER_ENGINE" exec "$DOCKER_NODE" sh -c "wget -qO- \"http://$API_IP:$API_PORT/events/state\" | head -n 1" 2>/dev/null)
 
     if [ $? -ne 0 ] || [ -z "$RAW_STATE" ]; then
       echo "Error: Failed to fetch state for $DOCKER_NODE"
@@ -104,7 +114,7 @@ while true; do
     # -----------------------------
     # FETCH EARNINGS
     # -----------------------------
-    EARNINGS_JSON=$(docker exec "$DOCKER_NODE" sh -c "wget -qO- \"http://$API_IP:$API_PORT/node/provider/service-earnings\" | head -n 1" 2>/dev/null)
+    EARNINGS_JSON=$("$CONTAINER_ENGINE" exec "$DOCKER_NODE" sh -c "wget -qO- \"http://$API_IP:$API_PORT/node/provider/service-earnings\" | head -n 1" 2>/dev/null)
 
     if [ $? -ne 0 ] || [ -z "$EARNINGS_JSON" ]; then
       echo "Error: Failed to fetch earnings for $DOCKER_NODE"
